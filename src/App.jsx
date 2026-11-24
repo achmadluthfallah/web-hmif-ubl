@@ -4,9 +4,9 @@ import { supabase } from './supabaseClient';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import LandingPage from './pages/LandingPage';
+import Dashboard from './pages/Dashboard';
 
 const LoginPage = lazy(() => import('./pages/LoginPage'));
-const Dashboard = lazy(() => import('./pages/dashboard'));
 
 export default function App() {
   const [adminUser, setAdminUser] = useState(() => {
@@ -25,20 +25,26 @@ export default function App() {
   const [members, setMembers] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [aspirasi, setAspirasi] = useState([]);
+  const [galeri, setGaleri] = useState([]);
+  const [berita, setBerita] = useState([]);
 
   useEffect(() => {
     const fetchAllData = async () => {
-      const [resAcc, resAsp, resApp, resMem] = await Promise.all([
+      const [resAcc, resAsp, resApp, resMem, resGal, resBer] = await Promise.all([
         supabase.from('accounts').select('*').order('id', { ascending: true }),
         supabase.from('aspirasi').select('*').order('id', { ascending: false }),
         supabase.from('applicants').select('*').order('id', { ascending: true }),
         supabase.from('members').select('*').order('id', { ascending: true }),
+        supabase.from('galeri').select('*').order('id', { ascending: false }),
+        supabase.from('berita').select('*').order('id', { ascending: false }),
       ]);
 
       if (resAcc.data) setAccounts(resAcc.data);
       if (resAsp.data) setAspirasi(resAsp.data);
       if (resApp.data) setApplicants(resApp.data);
       if (resMem.data) setMembers(resMem.data);
+      if (resGal.data) setGaleri(resGal.data);
+      if (resBer.data) setBerita(resBer.data);
     };
 
     fetchAllData();
@@ -111,15 +117,59 @@ export default function App() {
   };
 
   const handleDeleteAccount = async (id) => {
-    const { error } = await supabase
-      .from('accounts')
-      .delete()
-      .eq('id', id);
-
+    const { error } = await supabase.from('accounts').delete().eq('id', id);
     if (!error) {
       setAccounts((prev) => prev.filter((acc) => acc.id !== id));
     } else {
       alert('Gagal menghapus akun: ' + error.message);
+    }
+  };
+
+  // --- CRUD GALERI KEGIATAN (KOMINFO & LITBANG) ---
+  const handleAddGaleri = async (newGaleri) => {
+    const { data, error } = await supabase
+      .from('galeri')
+      .insert([newGaleri])
+      .select();
+
+    if (!error && data) {
+      setGaleri((prev) => [data[0], ...prev]);
+      alert('Foto galeri kegiatan berhasil dipublikasikan!');
+    } else {
+      alert('Gagal menambah galeri: ' + error.message);
+    }
+  };
+
+  const handleDeleteGaleri = async (id) => {
+    const { error } = await supabase.from('galeri').delete().eq('id', id);
+    if (!error) {
+      setGaleri((prev) => prev.filter((item) => item.id !== id));
+    } else {
+      alert('Gagal menghapus galeri: ' + error.message);
+    }
+  };
+
+  // --- CRUD BERITA & KAJIAN TERBARU (KOMINFO & LITBANG) ---
+  const handleAddBerita = async (newBerita) => {
+    const { data, error } = await supabase
+      .from('berita')
+      .insert([newBerita])
+      .select();
+
+    if (!error && data) {
+      setBerita((prev) => [data[0], ...prev]);
+      alert('Berita/Kajian terbaru berhasil dipublikasikan!');
+    } else {
+      alert('Gagal menambah berita: ' + error.message);
+    }
+  };
+
+  const handleDeleteBerita = async (id) => {
+    const { error } = await supabase.from('berita').delete().eq('id', id);
+    if (!error) {
+      setBerita((prev) => prev.filter((item) => item.id !== id));
+    } else {
+      alert('Gagal menghapus berita: ' + error.message);
     }
   };
 
@@ -155,7 +205,9 @@ export default function App() {
         <Header isScrolled={isScrolled} activePage={activePage} setActivePage={setActivePage} />
       )}
 
-      {activePage === 'landing' && <LandingPage setActivePage={setActivePage} />}
+      {activePage === 'landing' && (
+        <LandingPage setActivePage={setActivePage} galeri={galeri} berita={berita} />
+      )}
 
       <Suspense
         fallback={
@@ -167,23 +219,30 @@ export default function App() {
         {activePage === 'login' && (
           <LoginPage accounts={accounts} handleLogin={handleLogin} setActivePage={setActivePage} />
         )}
-        {activePage === 'dashboard' && adminUser && (
-          <Dashboard
-            adminUser={adminUser}
-            handleLogout={handleLogout}
-            applicants={applicants}
-            members={members}
-            accounts={accounts}
-            aspirasi={aspirasi}
-            handleUpdateStatus={handleUpdateStatus}
-            handleExportCSV={handleExportCSV}
-            handleMarkAspirasiRead={handleMarkAspirasiRead}
-            handleExportAspirasiCSV={handleExportAspirasiCSV}
-            handleAddAccount={handleAddAccount}
-            handleDeleteAccount={handleDeleteAccount}
-          />
-        )}
       </Suspense>
+
+      {activePage === 'dashboard' && adminUser && (
+        <Dashboard
+          adminUser={adminUser}
+          handleLogout={handleLogout}
+          applicants={applicants}
+          members={members}
+          accounts={accounts}
+          aspirasi={aspirasi}
+          galeri={galeri}
+          berita={berita}
+          handleUpdateStatus={handleUpdateStatus}
+          handleExportCSV={handleExportCSV}
+          handleMarkAspirasiRead={handleMarkAspirasiRead}
+          handleExportAspirasiCSV={handleExportAspirasiCSV}
+          handleAddAccount={handleAddAccount}
+          handleDeleteAccount={handleDeleteAccount}
+          handleAddGaleri={handleAddGaleri}
+          handleDeleteGaleri={handleDeleteGaleri}
+          handleAddBerita={handleAddBerita}
+          handleDeleteBerita={handleDeleteBerita}
+        />
+      )}
 
       {activePage !== 'dashboard' && <Footer />}
     </div>
