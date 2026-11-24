@@ -21,12 +21,12 @@ export default function Dashboard({
   handleAddBerita,
   handleDeleteBerita,
 }) {
-  const canManageContent = adminUser?.role === 'kominfo' || adminUser?.role === 'litbang';
+  const isKominfo = adminUser?.role === 'kominfo';
+  const canManageContent = isKominfo || adminUser?.role === 'litbang';
   const isSuperAdmin = adminUser?.role === 'litbang';
 
-  const [activeTab, setActiveTab] = useState(() =>
-    adminUser?.role === 'kominfo' ? 'konten' : 'pendaftar'
-  );
+  const [activeTab, setActiveTab] = useState(() => (isKominfo ? 'konten' : 'pendaftar'));
+  const currentTab = isKominfo ? 'konten' : activeTab;
 
   // State Modal Tambah Akun Admin
   const [showAddModal, setShowAddModal] = useState(false);
@@ -97,7 +97,7 @@ export default function Dashboard({
               <button
                 onClick={() => setActiveTab('konten')}
                 className={`w-full text-left px-4 py-2.5 rounded-lg font-semibold transition ${
-                  activeTab === 'konten'
+                  currentTab === 'konten'
                     ? 'bg-yellow-400 text-[#21416e]'
                     : 'hover:bg-blue-800 text-blue-100'
                 }`}
@@ -106,38 +106,42 @@ export default function Dashboard({
               </button>
             )}
 
-            <button
-              onClick={() => setActiveTab('pendaftar')}
-              className={`w-full text-left px-4 py-2.5 rounded-lg font-semibold transition ${
-                activeTab === 'pendaftar'
-                  ? 'bg-yellow-400 text-[#21416e]'
-                  : 'hover:bg-blue-800 text-blue-100'
-              }`}
-            >
-              Data Pendaftar
-            </button>
+            {!isKominfo && (
+              <>
+                <button
+                  onClick={() => setActiveTab('pendaftar')}
+                  className={`w-full text-left px-4 py-2.5 rounded-lg font-semibold transition ${
+                    currentTab === 'pendaftar'
+                      ? 'bg-yellow-400 text-[#21416e]'
+                      : 'hover:bg-blue-800 text-blue-100'
+                  }`}
+                >
+                  Data Pendaftar
+                </button>
 
-            <button
-              onClick={() => setActiveTab('anggota')}
-              className={`w-full text-left px-4 py-2.5 rounded-lg font-semibold transition ${
-                activeTab === 'anggota'
-                  ? 'bg-yellow-400 text-[#21416e]'
-                  : 'hover:bg-blue-800 text-blue-100'
-              }`}
-            >
-              Database Anggota
-            </button>
+                <button
+                  onClick={() => setActiveTab('anggota')}
+                  className={`w-full text-left px-4 py-2.5 rounded-lg font-semibold transition ${
+                    currentTab === 'anggota'
+                      ? 'bg-yellow-400 text-[#21416e]'
+                      : 'hover:bg-blue-800 text-blue-100'
+                  }`}
+                >
+                  Database Anggota
+                </button>
 
-            <button
-              onClick={() => setActiveTab('aspirasi')}
-              className={`w-full text-left px-4 py-2.5 rounded-lg font-semibold transition ${
-                activeTab === 'aspirasi'
-                  ? 'bg-yellow-400 text-[#21416e]'
-                  : 'hover:bg-blue-800 text-blue-100'
-              }`}
-            >
-              Aspirasi & Sistem
-            </button>
+                <button
+                  onClick={() => setActiveTab('aspirasi')}
+                  className={`w-full text-left px-4 py-2.5 rounded-lg font-semibold transition ${
+                    currentTab === 'aspirasi'
+                      ? 'bg-yellow-400 text-[#21416e]'
+                      : 'hover:bg-blue-800 text-blue-100'
+                  }`}
+                >
+                  Aspirasi & Sistem
+                </button>
+              </>
+            )}
           </nav>
         </div>
 
@@ -152,7 +156,7 @@ export default function Dashboard({
       {/* Konten Utama Dashboard */}
       <main className="flex-1 p-5 md:p-8 space-y-6 overflow-x-auto">
         {/* TAB 1: MANAJEMEN KONTEN WEB (KOMINFO & LITBANG) */}
-        {activeTab === 'konten' && canManageContent && (
+        {currentTab === 'konten' && canManageContent && (
           <div className="space-y-8">
             {/* Bagian A: Kelola Galeri Kegiatan */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -441,7 +445,7 @@ export default function Dashboard({
         )}
 
         {/* TAB 2: DATA PENDAFTAR OPREC */}
-        {activeTab === 'pendaftar' && (
+        {!isKominfo && currentTab === 'pendaftar' && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex flex-wrap justify-between items-center gap-3 mb-5">
               <h3 className="text-lg font-bold text-[#21416e]">Data Pendaftar Open Recruitment</h3>
@@ -509,7 +513,7 @@ export default function Dashboard({
         )}
 
         {/* TAB 3: DATABASE ANGGOTA */}
-        {activeTab === 'anggota' && (
+        {!isKominfo && currentTab === 'anggota' && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 className="text-lg font-bold text-[#21416e] mb-5">
               Database Pengurus & Anggota Aktif
@@ -544,7 +548,7 @@ export default function Dashboard({
         )}
 
         {/* TAB 4: ASPIRASI & SISTEM (TANPA GRAFIK KUNJUNGAN) */}
-        {activeTab === 'aspirasi' && (
+        {!isKominfo && currentTab === 'aspirasi' && (
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <div className="flex flex-wrap justify-between items-center gap-3 mb-5">
