@@ -1,30 +1,45 @@
-import React, { useState, useEffect } from 'react';
-
-import { INITIAL_APPLICANTS, INITIAL_MEMBERS, INITIAL_ACCOUNTS, INITIAL_ASPIRASI } from './data/dummyData.js';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { supabase } from './supabaseClient';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
-
 import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
-import Dashboard from './pages/Dashboard';
+
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
 
 export default function App() {
   const [activePage, setActivePage] = useState('landing');
   const [isScrolled, setIsScrolled] = useState(false);
 
-  const [applicants, setApplicants] = useState(INITIAL_APPLICANTS);
-  const [members, setMembers] = useState(INITIAL_MEMBERS);
-  const [accounts, setAccounts] = useState(INITIAL_ACCOUNTS);
-  const [aspirasi, setAspirasi] = useState(INITIAL_ASPIRASI);
+  const [applicants, setApplicants] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [accounts, setAccounts] = useState([]);
+  const [aspirasi, setAspirasi] = useState([]);
 
   const [adminUser, setAdminUser] = useState(null);
 
   useEffect(() => {
+    fetchAllData();
+
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const fetchAllData = async () => {
+    const [resAcc, resAsp, resApp, resMem] = await Promise.all([
+      supabase.from('accounts').select('*').order('id', { ascending: true }),
+      supabase.from('aspirasi').select('*').order('id', { ascending: false }),
+      supabase.from('applicants').select('*').order('id', { ascending: true }),
+      supabase.from('members').select('*').order('id', { ascending: true }),
+    ]);
+
+    if (resAcc.data) setAccounts(resAcc.data);
+    if (resAsp.data) setAspirasi(resAsp.data);
+    if (resApp.data) setApplicants(resApp.data);
+    if (resMem.data) setMembers(resMem.data);
+  };
 
   const handleLogin = (userObject) => {
     setAdminUser(userObject);
@@ -36,24 +51,70 @@ export default function App() {
     setActivePage('landing');
   };
 
-  const handleUpdateStatus = (id, newStatus) => {
-    setApplicants(applicants.map((a) => (a.id === id ? { ...a, status: newStatus } : a)));
+  const handleUpdateStatus = async (id, newStatus) => {
+    const { error } = await supabase
+      .from('applicants')
+      .update({ status: newStatus })
+      .eq('id', id);
+
+    if (!error) {
+      setApplicants(applicants.map((a) => (a.id === id ? { ...a, status: newStatus } : a)));
+    } else {
+      alert('Gagal memperbarui status: ' + error.message);
+    }
   };
 
-  const handleMarkAspirasiRead = (id) => {
-    setAspirasi(aspirasi.map((asp) => (asp.id === id ? { ...asp, status: 'Sudah Dibaca' } : asp)));
+  const handleMarkAspirasiRead = async (id) => {
+    const { error } = await supabase
+      .from('aspirasi')
+      .update({ status: 'Sudah Dibaca' })
+      .eq('id', id);
+
+    if (!error) {
+      setAspirasi(aspirasi.map((asp) => (asp.id === id ? { ...asp, status: 'Sudah Dibaca' } : asp)));
+    } else {
+      alert('Gagal memperbarui aspirasi: ' + error.message);
+    }
   };
 
-  const handleAddAccount = (newAccount) => {
-    setAccounts([...accounts, { id: Date.now(), ...newAccount }]);
+  const handleAddAccount = async (newAccount) => {
+    const { data, error } = await supabase
+      .from('accounts')
+      .insert([newAccount])
+      .select();
+
+    if (!error && data) {
+      setAccounts([...accounts, data[0]]);
+      alert('Akun admin baru berhasil disimpan permanen!');
+    } else {
+      alert('Gagal menambah akun: ' + error.message);
+    }
   };
 
-  const handleDeleteAccount = (id) => {
-    setAccounts(accounts.filter((acc) => acc.id !== id));
+  const handleDeleteAccount = async (id) => {
+    const { error } = await supabase
+      .from('accounts')
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+      setAccounts(accounts.filter((acc) => acc.id !== id));
+    } else {
+      alert('Gagal menghapus akun: ' + error.message);
+    }
   };
 
   const handleExportCSV = () => {
-    alert('Export CSV Pendaftar Berhasil!');
+    const headers = ['Nama,NPM,Semester,WhatsApp,Pilihan 1,Pilihan 2,Status\n'];
+    const rows = applicants.map(
+      (a) => `"${a.nama}","${a.npm}","${a.sem}","${a.wa}","${a.pil1}","${a.pil2}","${a.status}"`
+    );
+    const blob = new Blob([...headers, rows.join('\n')], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'Data_Pendaftar_Oprec_HMIF.csv';
+    link.click();
   };
 
   const handleExportAspirasiCSV = () => {
@@ -69,26 +130,39 @@ export default function App() {
 
   return (
     <div className="font-sans bg-gray-50 text-gray-800 min-h-screen flex flex-col justify-between">
-      {activePage !== 'dashboard' && <Header isScrolled={isScrolled} activePage={activePage} setActivePage={setActivePage} />}
+      {activePage !== 'dashboard' && (
+        <Header isScrolled={isScrolled} activePage={activePage} setActivePage={setActivePage} />
+      )}
 
       {activePage === 'landing' && <LandingPage setActivePage={setActivePage} />}
-      {activePage === 'login' && <LoginPage accounts={accounts} handleLogin={handleLogin} setActivePage={setActivePage} />}
-      {activePage === 'dashboard' && adminUser && (
-        <Dashboard
-          adminUser={adminUser}
-          handleLogout={handleLogout}
-          applicants={applicants}
-          members={members}
-          accounts={accounts}
-          aspirasi={aspirasi}
-          handleUpdateStatus={handleUpdateStatus}
-          handleExportCSV={handleExportCSV}
-          handleMarkAspirasiRead={handleMarkAspirasiRead}
-          handleExportAspirasiCSV={handleExportAspirasiCSV}
-          handleAddAccount={handleAddAccount}
-          handleDeleteAccount={handleDeleteAccount}
-        />
-      )}
+
+      <Suspense
+        fallback={
+          <div className="flex-1 flex items-center justify-center min-h-screen text-[#21416e] font-bold">
+            Memuat halaman...
+          </div>
+        }
+      >
+        {activePage === 'login' && (
+          <LoginPage accounts={accounts} handleLogin={handleLogin} setActivePage={setActivePage} />
+        )}
+        {activePage === 'dashboard' && adminUser && (
+          <Dashboard
+            adminUser={adminUser}
+            handleLogout={handleLogout}
+            applicants={applicants}
+            members={members}
+            accounts={accounts}
+            aspirasi={aspirasi}
+            handleUpdateStatus={handleUpdateStatus}
+            handleExportCSV={handleExportCSV}
+            handleMarkAspirasiRead={handleMarkAspirasiRead}
+            handleExportAspirasiCSV={handleExportAspirasiCSV}
+            handleAddAccount={handleAddAccount}
+            handleDeleteAccount={handleDeleteAccount}
+          />
+        )}
+      </Suspense>
 
       {activePage !== 'dashboard' && <Footer />}
     </div>
