@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { supabase } from './supabaseClient';
 
 import Header from './components/Header';
@@ -6,10 +6,19 @@ import Footer from './components/Footer';
 import LandingPage from './pages/LandingPage';
 
 const LoginPage = lazy(() => import('./pages/LoginPage'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Dashboard = lazy(() => import('./pages/dashboard'));
 
 export default function App() {
-  const [activePage, setActivePage] = useState('landing');
+  const [adminUser, setAdminUser] = useState(() => {
+    const savedUser = localStorage.getItem('hmif_admin_user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  const [activePage, setActivePage] = useState(() => {
+    const savedUser = localStorage.getItem('hmif_admin_user');
+    return savedUser ? 'dashboard' : 'landing';
+  });
+
   const [isScrolled, setIsScrolled] = useState(false);
 
   const [applicants, setApplicants] = useState([]);
@@ -17,37 +26,43 @@ export default function App() {
   const [accounts, setAccounts] = useState([]);
   const [aspirasi, setAspirasi] = useState([]);
 
-  const [adminUser, setAdminUser] = useState(null);
-
   useEffect(() => {
+    const fetchAllData = async () => {
+      const [resAcc, resAsp, resApp, resMem] = await Promise.all([
+        supabase.from('accounts').select('*').order('id', { ascending: true }),
+        supabase.from('aspirasi').select('*').order('id', { ascending: false }),
+        supabase.from('applicants').select('*').order('id', { ascending: true }),
+        supabase.from('members').select('*').order('id', { ascending: true }),
+      ]);
+
+      if (resAcc.data) setAccounts(resAcc.data);
+      if (resAsp.data) setAspirasi(resAsp.data);
+      if (resApp.data) setApplicants(resApp.data);
+      if (resMem.data) setMembers(resMem.data);
+    };
+
     fetchAllData();
 
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    const handleFocus = () => fetchAllData();
+
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
-
-  const fetchAllData = async () => {
-    const [resAcc, resAsp, resApp, resMem] = await Promise.all([
-      supabase.from('accounts').select('*').order('id', { ascending: true }),
-      supabase.from('aspirasi').select('*').order('id', { ascending: false }),
-      supabase.from('applicants').select('*').order('id', { ascending: true }),
-      supabase.from('members').select('*').order('id', { ascending: true }),
-    ]);
-
-    if (resAcc.data) setAccounts(resAcc.data);
-    if (resAsp.data) setAspirasi(resAsp.data);
-    if (resApp.data) setApplicants(resApp.data);
-    if (resMem.data) setMembers(resMem.data);
-  };
 
   const handleLogin = (userObject) => {
     setAdminUser(userObject);
+    localStorage.setItem('hmif_admin_user', JSON.stringify(userObject));
     setActivePage('dashboard');
   };
 
   const handleLogout = () => {
     setAdminUser(null);
+    localStorage.removeItem('hmif_admin_user');
     setActivePage('landing');
   };
 
@@ -58,7 +73,9 @@ export default function App() {
       .eq('id', id);
 
     if (!error) {
-      setApplicants(applicants.map((a) => (a.id === id ? { ...a, status: newStatus } : a)));
+      setApplicants((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, status: newStatus } : a))
+      );
     } else {
       alert('Gagal memperbarui status: ' + error.message);
     }
@@ -71,7 +88,9 @@ export default function App() {
       .eq('id', id);
 
     if (!error) {
-      setAspirasi(aspirasi.map((asp) => (asp.id === id ? { ...asp, status: 'Sudah Dibaca' } : asp)));
+      setAspirasi((prev) =>
+        prev.map((asp) => (asp.id === id ? { ...asp, status: 'Sudah Dibaca' } : asp))
+      );
     } else {
       alert('Gagal memperbarui aspirasi: ' + error.message);
     }
@@ -84,7 +103,7 @@ export default function App() {
       .select();
 
     if (!error && data) {
-      setAccounts([...accounts, data[0]]);
+      setAccounts((prev) => [...prev, data[0]]);
       alert('Akun admin baru berhasil disimpan permanen!');
     } else {
       alert('Gagal menambah akun: ' + error.message);
@@ -98,7 +117,7 @@ export default function App() {
       .eq('id', id);
 
     if (!error) {
-      setAccounts(accounts.filter((acc) => acc.id !== id));
+      setAccounts((prev) => prev.filter((acc) => acc.id !== id));
     } else {
       alert('Gagal menghapus akun: ' + error.message);
     }
@@ -119,7 +138,9 @@ export default function App() {
 
   const handleExportAspirasiCSV = () => {
     const headers = ['Tanggal,Pengirim,Isi Aspirasi,Status\n'];
-    const rows = aspirasi.map((a) => `"${a.tanggal}","${a.pengirim}","${a.isi}","${a.status}"`);
+    const rows = aspirasi.map(
+      (a) => `"${a.tanggal}","${a.pengirim}","${a.isi}","${a.status}"`
+    );
     const blob = new Blob([...headers, rows.join('\n')], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
