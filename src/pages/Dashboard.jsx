@@ -16,6 +16,7 @@ export default function Dashboard({
   handleAddAccount,
   handleDeleteAccount,
   handleAddGaleri,
+  handleUpdateGaleri,
   handleDeleteGaleri,
   handleAddBerita,
   handleDeleteBerita,
@@ -31,13 +32,17 @@ export default function Dashboard({
   const [showAddModal, setShowAddModal] = useState(false);
   const [newAcc, setNewAcc] = useState({ nama: '', username: '', password: '', role: 'sdm' });
 
-  // State Form Galeri Kegiatan (Default Prokja SDM)
+  // State Form Galeri Kegiatan (Termasuk Deskripsi)
   const [newGaleri, setNewGaleri] = useState({
     judul: '',
     tanggal: '',
     kategori: 'SDM',
     gambar: '',
+    deskripsi: '',
   });
+
+  // State Modal Edit Galeri
+  const [editingGaleri, setEditingGaleri] = useState(null);
 
   // State Form Berita & Kajian Terbaru
   const [newBerita, setNewBerita] = useState({
@@ -58,7 +63,15 @@ export default function Dashboard({
   const submitGaleri = (e) => {
     e.preventDefault();
     handleAddGaleri(newGaleri);
-    setNewGaleri({ judul: '', tanggal: '', kategori: 'SDM', gambar: '' });
+    setNewGaleri({ judul: '', tanggal: '', kategori: 'SDM', gambar: '', deskripsi: '' });
+  };
+
+  const submitEditGaleri = (e) => {
+    e.preventDefault();
+    if (!editingGaleri) return;
+    const { id, judul, tanggal, kategori, gambar, deskripsi } = editingGaleri;
+    handleUpdateGaleri(id, { judul, tanggal, kategori, gambar, deskripsi });
+    setEditingGaleri(null);
   };
 
   const submitBerita = (e) => {
@@ -148,7 +161,7 @@ export default function Dashboard({
                   Kelola Galeri Kegiatan HMIF
                 </h3>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Tambahkan dokumentasi foto kegiatan berdasarkan program kerja departemen.
+                  Tambahkan atau ubah foto serta deskripsi kegiatan pada card galeri halaman utama.
                 </p>
               </div>
 
@@ -212,6 +225,20 @@ export default function Dashboard({
                   />
                 </div>
 
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Deskripsi Galeri (Tampil di Card Galeri)
+                  </label>
+                  <textarea
+                    rows="2"
+                    required
+                    placeholder="Tuliskan deskripsi singkat mengenai kegiatan ini..."
+                    value={newGaleri.deskripsi}
+                    onChange={(e) => setNewGaleri({ ...newGaleri, deskripsi: e.target.value })}
+                    className="w-full px-3 py-2 border rounded text-sm bg-white"
+                  />
+                </div>
+
                 <div className="md:col-span-2 flex justify-end">
                   <button
                     type="submit"
@@ -242,9 +269,27 @@ export default function Dashboard({
                           Prokja {item.kategori} • {item.tanggal}
                         </span>
                         <h4 className="font-bold text-sm text-gray-800 mt-1.5">{item.judul}</h4>
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                          {item.deskripsi || 'Belum ada deskripsi.'}
+                        </p>
                       </div>
                     </div>
-                    <div className="px-3 pb-3 flex justify-end">
+                    <div className="px-3 pb-3 flex justify-end gap-2">
+                      <button
+                        onClick={() =>
+                          setEditingGaleri({
+                            id: item.id,
+                            judul: item.judul || '',
+                            tanggal: item.tanggal || '',
+                            kategori: item.kategori || 'SDM',
+                            gambar: item.gambar || '',
+                            deskripsi: item.deskripsi || '',
+                          })
+                        }
+                        className="px-3 py-1 bg-yellow-400 hover:bg-yellow-500 text-[#21416e] rounded text-xs font-bold"
+                      >
+                        Edit
+                      </button>
                       <button
                         onClick={() => handleDeleteGaleri(item.id)}
                         className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold"
@@ -611,6 +656,104 @@ export default function Dashboard({
           </div>
         )}
       </main>
+
+      {/* Modal Edit Galeri & Deskripsi */}
+      {editingGaleri && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4">
+            <h4 className="text-base font-bold text-[#21416e]">
+              Edit Galeri & Deskripsi Kegiatan
+            </h4>
+            <form onSubmit={submitEditGaleri} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Judul Kegiatan</label>
+                <input
+                  type="text"
+                  required
+                  value={editingGaleri.judul}
+                  onChange={(e) => setEditingGaleri({ ...editingGaleri, judul: e.target.value })}
+                  className="w-full px-3 py-2 border rounded text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Tanggal</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingGaleri.tanggal}
+                    onChange={(e) =>
+                      setEditingGaleri({ ...editingGaleri, tanggal: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border rounded text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Kategori Prokja
+                  </label>
+                  <select
+                    value={editingGaleri.kategori}
+                    onChange={(e) =>
+                      setEditingGaleri({ ...editingGaleri, kategori: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border rounded text-sm bg-white"
+                  >
+                    <option value="SDM">Prokja SDM</option>
+                    <option value="Litbang">Prokja Litbang</option>
+                    <option value="Kominfo">Prokja Kominfo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  URL Foto Kegiatan
+                </label>
+                <input
+                  type="url"
+                  required
+                  value={editingGaleri.gambar}
+                  onChange={(e) => setEditingGaleri({ ...editingGaleri, gambar: e.target.value })}
+                  className="w-full px-3 py-2 border rounded text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  Deskripsi Card Galeri
+                </label>
+                <textarea
+                  rows="3"
+                  required
+                  value={editingGaleri.deskripsi}
+                  onChange={(e) =>
+                    setEditingGaleri({ ...editingGaleri, deskripsi: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border rounded text-sm"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingGaleri(null)}
+                  className="px-4 py-2 border text-gray-600 rounded text-xs font-semibold"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#21416e] text-white rounded text-xs font-semibold"
+                >
+                  Simpan Perubahan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal Tambah Akun Admin */}
       {showAddModal && (

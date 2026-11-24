@@ -134,9 +134,24 @@ export default function App() {
 
     if (!error && data) {
       setGaleri((prev) => [data[0], ...prev]);
-      alert('Foto galeri kegiatan berhasil dipublikasikan!');
+      alert('Foto & deskripsi galeri kegiatan berhasil dipublikasikan!');
     } else {
       alert('Gagal menambah galeri: ' + error.message);
+    }
+  };
+
+  const handleUpdateGaleri = async (id, updatedGaleri) => {
+    const { data, error } = await supabase
+      .from('galeri')
+      .update(updatedGaleri)
+      .eq('id', id)
+      .select();
+
+    if (!error && data) {
+      setGaleri((prev) => prev.map((item) => (item.id === id ? data[0] : item)));
+      alert('Galeri & deskripsi berhasil diperbarui!');
+    } else {
+      alert('Gagal memperbarui galeri: ' + error.message);
     }
   };
 
@@ -238,6 +253,7 @@ export default function App() {
           handleAddAccount={handleAddAccount}
           handleDeleteAccount={handleDeleteAccount}
           handleAddGaleri={handleAddGaleri}
+          handleUpdateGaleri={handleUpdateGaleri}
           handleDeleteGaleri={handleDeleteGaleri}
           handleAddBerita={handleAddBerita}
           handleDeleteBerita={handleDeleteBerita}
