@@ -31,11 +31,11 @@ export default function Dashboard({
   const [showAddModal, setShowAddModal] = useState(false);
   const [newAcc, setNewAcc] = useState({ nama: '', username: '', password: '', role: 'sdm' });
 
-  // State Form Galeri Kegiatan
+  // State Form Galeri Kegiatan (Default Prokja SDM)
   const [newGaleri, setNewGaleri] = useState({
     judul: '',
     tanggal: '',
-    kategori: 'Kegiatan',
+    kategori: 'SDM',
     gambar: '',
   });
 
@@ -58,7 +58,7 @@ export default function Dashboard({
   const submitGaleri = (e) => {
     e.preventDefault();
     handleAddGaleri(newGaleri);
-    setNewGaleri({ judul: '', tanggal: '', kategori: 'Kegiatan', gambar: '' });
+    setNewGaleri({ judul: '', tanggal: '', kategori: 'SDM', gambar: '' });
   };
 
   const submitBerita = (e) => {
@@ -148,13 +148,18 @@ export default function Dashboard({
                   Kelola Galeri Kegiatan HMIF
                 </h3>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Tambahkan dokumentasi foto kegiatan terbaru agar tampil pada halaman utama website.
+                  Tambahkan dokumentasi foto kegiatan berdasarkan program kerja departemen.
                 </p>
               </div>
 
-              <form onSubmit={submitGaleri} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-lg border">
+              <form
+                onSubmit={submitGaleri}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-lg border"
+              >
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Judul Kegiatan</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Judul Kegiatan
+                  </label>
                   <input
                     type="text"
                     required
@@ -178,16 +183,17 @@ export default function Dashboard({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Kategori</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Kategori Prokja
+                    </label>
                     <select
                       value={newGaleri.kategori}
                       onChange={(e) => setNewGaleri({ ...newGaleri, kategori: e.target.value })}
                       className="w-full px-3 py-2 border rounded text-sm bg-white"
                     >
-                      <option value="Kegiatan">Kegiatan</option>
-                      <option value="Seminar">Seminar</option>
-                      <option value="Pelatihan">Pelatihan</option>
-                      <option value="Lomba">Lomba</option>
+                      <option value="SDM">Prokja SDM</option>
+                      <option value="Litbang">Prokja Litbang</option>
+                      <option value="Kominfo">Prokja Kominfo</option>
                     </select>
                   </div>
                 </div>
@@ -219,7 +225,10 @@ export default function Dashboard({
               {/* Daftar Galeri Aktif */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {galeri.map((item) => (
-                  <div key={item.id} className="border rounded-lg overflow-hidden bg-white shadow-xs flex flex-col justify-between">
+                  <div
+                    key={item.id}
+                    className="border rounded-lg overflow-hidden bg-white shadow-xs flex flex-col justify-between"
+                  >
                     <div>
                       <img
                         src={item.gambar}
@@ -230,7 +239,7 @@ export default function Dashboard({
                       />
                       <div className="p-3">
                         <span className="text-[11px] font-bold px-2 py-0.5 bg-blue-100 text-[#21416e] rounded">
-                          {item.kategori} • {item.tanggal}
+                          Prokja {item.kategori} • {item.tanggal}
                         </span>
                         <h4 className="font-bold text-sm text-gray-800 mt-1.5">{item.judul}</h4>
                       </div>
@@ -259,9 +268,14 @@ export default function Dashboard({
                 </p>
               </div>
 
-              <form onSubmit={submitBerita} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-lg border">
+              <form
+                onSubmit={submitBerita}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-lg border"
+              >
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Judul Berita / Kajian</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Judul Berita / Kajian
+                  </label>
                   <input
                     type="text"
                     required
@@ -299,7 +313,9 @@ export default function Dashboard({
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-gray-700 mb-1">URL Gambar Cover</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    URL Gambar Cover
+                  </label>
                   <input
                     type="url"
                     required
@@ -311,7 +327,9 @@ export default function Dashboard({
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Ringkasan Isi Berita / Kajian</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Ringkasan Isi Berita / Kajian
+                  </label>
                   <textarea
                     rows="3"
                     required
@@ -346,7 +364,9 @@ export default function Dashboard({
                   <tbody className="divide-y">
                     {berita.map((item) => (
                       <tr key={item.id} className="hover:bg-gray-50">
-                        <td className="p-3 whitespace-nowrap text-xs text-gray-600">{item.tanggal}</td>
+                        <td className="p-3 whitespace-nowrap text-xs text-gray-600">
+                          {item.tanggal}
+                        </td>
                         <td className="p-3 whitespace-nowrap">
                           <span className="px-2 py-1 text-xs font-bold bg-blue-100 text-[#21416e] rounded">
                             {item.kategori}
@@ -354,7 +374,9 @@ export default function Dashboard({
                         </td>
                         <td className="p-3">
                           <p className="font-bold text-gray-800">{item.judul}</p>
-                          <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{item.ringkasan}</p>
+                          <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">
+                            {item.ringkasan}
+                          </p>
                         </td>
                         <td className="p-3 text-right">
                           <button
@@ -444,7 +466,9 @@ export default function Dashboard({
         {/* TAB 3: DATABASE ANGGOTA */}
         {activeTab === 'anggota' && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-bold text-[#21416e] mb-5">Database Pengurus & Anggota Aktif</h3>
+            <h3 className="text-lg font-bold text-[#21416e] mb-5">
+              Database Pengurus & Anggota Aktif
+            </h3>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
@@ -595,7 +619,9 @@ export default function Dashboard({
             <h4 className="text-base font-bold text-[#21416e]">Tambah Akun Pengurus Baru</h4>
             <form onSubmit={submitAccount} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Nama Jabatan / Pengurus</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  Nama Jabatan / Pengurus
+                </label>
                 <input
                   type="text"
                   required
@@ -628,7 +654,9 @@ export default function Dashboard({
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Role (Hak Akses)</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  Role (Hak Akses)
+                </label>
                 <select
                   value={newAcc.role}
                   onChange={(e) => setNewAcc({ ...newAcc, role: e.target.value })}

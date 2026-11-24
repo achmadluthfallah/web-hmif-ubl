@@ -65,23 +65,15 @@ export default function LandingPage({ setActivePage, galeri = [], berita = [] })
         }))
       : INITIAL_GALLERY;
 
-  // Gabungkan kategori bawaan dengan kategori baru yang diinput Kominfo/Litbang
-  const categories = [
-    'Semua',
-    ...Array.from(
-      new Set([
-        'SDM',
-        'Kominfo',
-        'Litbang',
-        ...galleryItems.map((item) => item.kategori).filter(Boolean),
-      ])
-    ),
-  ];
+  // Filter kategori tetap: hanya Semua, SDM, Kominfo, dan Litbang
+  const categories = ['Semua', 'SDM', 'Kominfo', 'Litbang'];
 
   const filteredGallery =
     selectedCategory === 'Semua'
       ? galleryItems
-      : galleryItems.filter((item) => item.kategori === selectedCategory);
+      : galleryItems.filter(
+          (item) => item.kategori?.toLowerCase() === selectedCategory.toLowerCase()
+        );
 
   return (
     <main className="flex-1">
@@ -390,7 +382,7 @@ export default function LandingPage({ setActivePage, galeri = [], berita = [] })
               </p>
             </div>
 
-            {/* Filter Kategori Galeri */}
+            {/* Filter Kategori Galeri (Semua, SDM, Kominfo, Litbang) */}
             <div className="flex flex-wrap gap-2">
               {categories.map((cat) => (
                 <button
@@ -425,7 +417,7 @@ export default function LandingPage({ setActivePage, galeri = [], berita = [] })
                     className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                   />
                   <span className="absolute top-3 left-3 bg-[#21416e]/90 text-[#F1C40F] text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">
-                    {item.kategori}
+                    Prokja {item.kategori}
                   </span>
                 </div>
 
@@ -595,7 +587,7 @@ export default function LandingPage({ setActivePage, galeri = [], berita = [] })
             <div className="p-6 space-y-2">
               <div className="flex items-center gap-3">
                 <span className="bg-[#21416e] text-[#F1C40F] text-xs font-bold px-3 py-1 rounded-full">
-                  {activePhoto.kategori}
+                  Prokja {activePhoto.kategori}
                 </span>
                 <span className="text-xs text-gray-500 font-medium">{activePhoto.tanggal}</span>
               </div>
