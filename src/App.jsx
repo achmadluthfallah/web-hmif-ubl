@@ -1,12 +1,44 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 
-import Header from './components/Header';
-import Footer from './components/Footer';
-import LandingPage from './pages/LandingPage';
-import Dashboard from './pages/Dashboard';
+import Header from './components/Header.jsx';
+import * as FooterModule from './components/Footer.jsx';
+import LandingPage from './pages/LandingPage.jsx';
+import * as AboutModule from './pages/AboutPage.jsx';
+import * as StrukturModule from './pages/StrukturPage.jsx';
+import * as DepartmentModule from './pages/DepartmentPage.jsx';
+import * as LoginModule from './pages/LoginPage.jsx';
+import * as DashboardModule from './pages/Dashboard.jsx';
 
-const LoginPage = lazy(() => import('./pages/LoginPage'));
+const Footer =
+  FooterModule.default || FooterModule.Footer || Object.values(FooterModule)[0];
+const AboutPage =
+  AboutModule.default || AboutModule.AboutPage || Object.values(AboutModule)[0];
+const StrukturPage =
+  StrukturModule.default ||
+  StrukturModule.StrukturPage ||
+  Object.values(StrukturModule)[0];
+const DepartmentPage =
+  DepartmentModule.default ||
+  DepartmentModule.DepartmentPage ||
+  Object.values(DepartmentModule)[0];
+const LoginPage =
+  LoginModule.default || LoginModule.LoginPage || Object.values(LoginModule)[0];
+const Dashboard =
+  DashboardModule.default ||
+  DashboardModule.Dashboard ||
+  Object.values(DashboardModule)[0];
+
+const isAdminRoute = () => {
+  const hash = window.location.hash.toLowerCase();
+  const path = window.location.pathname.toLowerCase();
+  return (
+    hash === '#admin' ||
+    hash === '#login' ||
+    path.endsWith('/admin') ||
+    path.endsWith('/login')
+  );
+};
 
 export default function App() {
   const [adminUser, setAdminUser] = useState(() => {
@@ -16,9 +48,12 @@ export default function App() {
 
   const [activePage, setActivePage] = useState(() => {
     const savedUser = localStorage.getItem('hmif_admin_user');
-    return savedUser ? 'dashboard' : 'landing';
+    if (savedUser) return 'dashboard';
+    if (isAdminRoute()) return 'login';
+    return 'landing';
   });
 
+  const [selectedDept, setSelectedDept] = useState('sdm');
   const [isScrolled, setIsScrolled] = useState(false);
 
   const [applicants, setApplicants] = useState([]);
@@ -28,6 +63,7 @@ export default function App() {
   const [galeri, setGaleri] = useState([]);
   const [berita, setBerita] = useState([]);
 
+  // Ambil data dari Supabase + listener scroll
   useEffect(() => {
     const fetchAllData = async () => {
       const [resAcc, resAsp, resApp, resMem, resGal, resBer] = await Promise.all([
@@ -60,6 +96,36 @@ export default function App() {
     };
   }, []);
 
+  // Akses tersembunyi ke Login Admin via #admin / #login atau Ctrl + Shift + L
+  useEffect(() => {
+    const checkAdminAccess = () => {
+      if (isAdminRoute()) {
+        setActivePage(adminUser ? 'dashboard' : 'login');
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        setActivePage(adminUser ? 'dashboard' : 'login');
+      }
+    };
+
+    window.addEventListener('hashchange', checkAdminAccess);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('hashchange', checkAdminAccess);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [adminUser]);
+
+  const handleNavigate = (page) => {
+    if (page !== 'login' && page !== 'dashboard' && window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+    setActivePage(page);
+  };
+
   const handleLogin = (userObject) => {
     setAdminUser(userObject);
     localStorage.setItem('hmif_admin_user', JSON.stringify(userObject));
@@ -69,7 +135,7 @@ export default function App() {
   const handleLogout = () => {
     setAdminUser(null);
     localStorage.removeItem('hmif_admin_user');
-    setActivePage('landing');
+    handleNavigate('landing');
   };
 
   const handleUpdateStatus = async (id, newStatus) => {
@@ -95,7 +161,9 @@ export default function App() {
 
     if (!error) {
       setAspirasi((prev) =>
-        prev.map((asp) => (asp.id === id ? { ...asp, status: 'Sudah Dibaca' } : asp))
+        prev.map((asp) =>
+          asp.id === id ? { ...asp, status: 'Sudah Dibaca' } : asp
+        )
       );
     } else {
       alert('Gagal memperbarui aspirasi: ' + error.message);
@@ -125,7 +193,6 @@ export default function App() {
     }
   };
 
-  // --- CRUD GALERI KEGIATAN (KOMINFO & LITBANG) ---
   const handleAddGaleri = async (newGaleri) => {
     const { data, error } = await supabase
       .from('galeri')
@@ -148,7 +215,9 @@ export default function App() {
       .select();
 
     if (!error && data) {
-      setGaleri((prev) => prev.map((item) => (item.id === id ? data[0] : item)));
+      setGaleri((prev) =>
+        prev.map((item) => (item.id === id ? data[0] : item))
+      );
       alert('Galeri & deskripsi berhasil diperbarui!');
     } else {
       alert('Gagal memperbarui galeri: ' + error.message);
@@ -164,7 +233,6 @@ export default function App() {
     }
   };
 
-  // --- CRUD BERITA & KAJIAN TERBARU (KOMINFO & LITBANG) ---
   const handleAddBerita = async (newBerita) => {
     const { data, error } = await supabase
       .from('berita')
@@ -191,7 +259,8 @@ export default function App() {
   const handleExportCSV = () => {
     const headers = ['Nama,NPM,Semester,WhatsApp,Pilihan 1,Pilihan 2,Status\n'];
     const rows = applicants.map(
-      (a) => `"${a.nama}","${a.npm}","${a.sem}","${a.wa}","${a.pil1}","${a.pil2}","${a.status}"`
+      (a) =>
+        `"${a.nama}","${a.npm}","${a.sem}","${a.wa}","${a.pil1}","${a.pil2}","${a.status}"`
     );
     const blob = new Blob([...headers, rows.join('\n')], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -217,26 +286,48 @@ export default function App() {
   return (
     <div className="font-sans bg-gray-50 text-gray-800 min-h-screen flex flex-col justify-between">
       {activePage !== 'dashboard' && (
-        <Header isScrolled={isScrolled} activePage={activePage} setActivePage={setActivePage} />
+        <Header
+          isScrolled={isScrolled}
+          activePage={activePage}
+          setActivePage={handleNavigate}
+        />
       )}
 
       {activePage === 'landing' && (
-        <LandingPage setActivePage={setActivePage} galeri={galeri} berita={berita} />
+        <LandingPage
+          setActivePage={handleNavigate}
+          setSelectedDept={setSelectedDept}
+          galeri={galeri}
+          berita={berita}
+        />
       )}
 
-      <Suspense
-        fallback={
-          <div className="flex-1 flex items-center justify-center min-h-screen text-[#21416e] font-bold">
-            Memuat halaman...
-          </div>
-        }
-      >
-        {activePage === 'login' && (
-          <LoginPage accounts={accounts} handleLogin={handleLogin} setActivePage={setActivePage} />
-        )}
-      </Suspense>
+      {activePage === 'about' && AboutPage && (
+        <AboutPage setActivePage={handleNavigate} />
+      )}
 
-      {activePage === 'dashboard' && adminUser && (
+      {activePage === 'struktur' && StrukturPage && (
+        <StrukturPage setActivePage={handleNavigate} />
+      )}
+
+      {activePage === 'departemen' && DepartmentPage && (
+        <DepartmentPage
+          selectedDept={selectedDept}
+          setSelectedDept={setSelectedDept}
+          setActivePage={handleNavigate}
+          galeri={galeri}
+        />
+      )}
+
+      {activePage === 'login' && LoginPage && (
+        <LoginPage
+          accounts={accounts}
+          handleLogin={handleLogin}
+          setActivePage={handleNavigate}
+        />
+      )}
+
+      {activePage === 'dashboard' && adminUser && Dashboard && (
         <Dashboard
           adminUser={adminUser}
           handleLogout={handleLogout}
@@ -260,7 +351,7 @@ export default function App() {
         />
       )}
 
-      {activePage !== 'dashboard' && <Footer />}
+      {activePage !== 'dashboard' && Footer && <Footer />}
     </div>
   );
 }
