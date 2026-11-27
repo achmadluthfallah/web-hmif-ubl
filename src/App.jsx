@@ -63,7 +63,6 @@ export default function App() {
   const [galeri, setGaleri] = useState([]);
   const [berita, setBerita] = useState([]);
 
-  // Ambil data dari Supabase + listener scroll
   useEffect(() => {
     const fetchAllData = async () => {
       const [resAcc, resAsp, resApp, resMem, resGal, resBer] = await Promise.all([
@@ -96,7 +95,6 @@ export default function App() {
     };
   }, []);
 
-  // Akses tersembunyi ke Login Admin via #admin / #login atau Ctrl + Shift + L
   useEffect(() => {
     const checkAdminAccess = () => {
       if (isAdminRoute()) {

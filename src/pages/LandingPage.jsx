@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { INITIAL_GALLERY } from '../data/dummyData.js';
 import logoHmif from '../assets/logo-hmif.png';
 
@@ -60,6 +61,28 @@ export default function LandingPage({
   const [selectedCategory, setSelectedCategory] = useState('Semua');
   const [activePhoto, setActivePhoto] = useState(null);
   const [activeBerita, setActiveBerita] = useState(null);
+
+  useEffect(() => {
+    const isModalOpen = Boolean(activePhoto || activeBerita);
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setActivePhoto(null);
+        setActiveBerita(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activePhoto, activeBerita]);
 
   const galleryItems =
     galeri && galeri.length > 0
@@ -183,18 +206,15 @@ export default function LandingPage({
               </Reveal>
             </div>
 
-            {/* KOLOM KANAN: Logo HMIF Melayang (Hanya tampil di PC/Laptop) */}
+            {/* KOLOM KANAN: Logo HMIF Tanpa Lingkaran (Hanya tampil di PC/Laptop) */}
             <div className="hidden lg:flex lg:col-span-5 justify-end">
               <Reveal direction="zoom" delay={200}>
-                <div className="relative flex items-center justify-center animate-hero-float">
-                  <div className="absolute w-80 h-80 rounded-full bg-[#F1C40F]/20 blur-2xl"></div>
-                  <div className="relative w-80 h-80 rounded-full bg-white/10 border border-white/20 backdrop-blur-md p-8 shadow-2xl flex items-center justify-center">
-                    <img
-                      src={logoHmif}
-                      alt="Logo Resmi HMIF UBL"
-                      className="w-full h-full object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.45)]"
-                    />
-                  </div>
+                <div className="flex items-center justify-center animate-hero-float">
+                  <img
+                    src={logoHmif}
+                    alt="Logo Resmi HMIF UBL"
+                    className="w-72 h-72 xl:w-80 xl:h-80 object-contain drop-shadow-[0_14px_28px_rgba(0,0,0,0.45)]"
+                  />
                 </div>
               </Reveal>
             </div>
@@ -215,7 +235,7 @@ export default function LandingPage({
         </button>
       </section>
 
-      {/* ==================== SECTION: 3 PILAR ORGANISASI (KLIK DETAIL) ==================== */}
+      {/* ==================== SECTION: 3 PILAR ORGANISASI ==================== */}
       <section id="departemen" className="py-20 bg-white scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           <Reveal>
@@ -341,7 +361,7 @@ export default function LandingPage({
               <span className="text-[#F1C40F] font-bold text-sm tracking-wider uppercase">
                 Informasi Terkini
               </span>
-              <h2 className="text-3xl font-bold text-[#21416e] mt-1">Berita & Kajian Terbaru</h2>
+              <h2 className="text-3xl font-bold text-[#21416e] mt-1">Berita &amp; Kajian Terbaru</h2>
             </div>
           </Reveal>
 
@@ -413,7 +433,7 @@ export default function LandingPage({
                     </h3>
                     <p className="text-gray-500 text-sm">
                       Kegiatan pelatihan internal HMIF UBL guna meningkatkan keterampilan pemrograman
-                      React & Tailwind.
+                      React &amp; Tailwind.
                     </p>
                   </div>
                 </div>
@@ -469,81 +489,99 @@ export default function LandingPage({
         </div>
       </section>
 
-      {/* ==================== MODAL LIGHTBOX DETAIL FOTO ==================== */}
-      {activePhoto && (
-        <div
-          onClick={() => setActivePhoto(null)}
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
-        >
+      {/* ==================== MODAL LIGHTBOX DETAIL FOTO (PORTAL DI TENGAH LAYAR) ==================== */}
+      {activePhoto &&
+        createPortal(
           <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-2xl overflow-hidden max-w-2xl w-full shadow-2xl animate-modal-in"
+            onClick={() => setActivePhoto(null)}
+            className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
           >
-            <div className="relative">
-              <img
-                src={activePhoto.foto}
-                alt={activePhoto.judul}
-                className="w-full max-h-[60vh] object-cover"
-              />
-              <button
-                onClick={() => setActivePhoto(null)}
-                className="absolute top-4 right-4 bg-black/60 hover:bg-black text-white w-9 h-9 rounded-full flex items-center justify-center font-bold transition cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-6 space-y-2">
-              <div className="flex items-center gap-3">
-                <span className="bg-[#21416e] text-[#F1C40F] text-xs font-bold px-3 py-1 rounded-full">
-                  Prokja {activePhoto.kategori}
-                </span>
-                <span className="text-xs text-gray-500 font-medium">{activePhoto.tanggal}</span>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative bg-white rounded-2xl overflow-hidden max-w-xl w-full my-auto shadow-2xl animate-modal-in"
+            >
+              <div className="relative bg-gray-100">
+                <img
+                  src={activePhoto.foto}
+                  alt={activePhoto.judul}
+                  className="w-full max-h-[52vh] object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => setActivePhoto(null)}
+                  aria-label="Tutup"
+                  className="absolute top-3 right-3 bg-black/65 hover:bg-black text-white w-9 h-9 rounded-full flex items-center justify-center font-bold transition cursor-pointer"
+                >
+                  ✕
+                </button>
               </div>
-              <h3 className="text-xl font-bold text-[#21416e]">{activePhoto.judul}</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">{activePhoto.deskripsi}</p>
+              <div className="p-6 space-y-2.5">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="bg-[#21416e] text-[#F1C40F] text-xs font-bold px-3 py-1 rounded-full">
+                    Prokja {activePhoto.kategori}
+                  </span>
+                  <span className="text-xs text-gray-500 font-medium">
+                    {activePhoto.tanggal}
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-[#21416e]">
+                  {activePhoto.judul}
+                </h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  {activePhoto.deskripsi}
+                </p>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
-      {/* ==================== MODAL DETAIL BERITA / KAJIAN ==================== */}
-      {activeBerita && (
-        <div
-          onClick={() => setActiveBerita(null)}
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
-        >
+      {/* ==================== MODAL DETAIL BERITA / KAJIAN (PORTAL DI TENGAH LAYAR) ==================== */}
+      {activeBerita &&
+        createPortal(
           <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-2xl overflow-hidden max-w-2xl w-full shadow-2xl animate-modal-in"
+            onClick={() => setActiveBerita(null)}
+            className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
           >
-            <div className="relative">
-              <img
-                src={activeBerita.gambar}
-                alt={activeBerita.judul}
-                className="w-full max-h-[55vh] object-cover"
-              />
-              <button
-                onClick={() => setActiveBerita(null)}
-                className="absolute top-4 right-4 bg-black/60 hover:bg-black text-white w-9 h-9 rounded-full flex items-center justify-center font-bold transition cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-6 space-y-2">
-              <div className="flex items-center gap-3">
-                <span className="bg-[#21416e] text-[#F1C40F] text-xs font-bold px-3 py-1 rounded-full">
-                  {activeBerita.kategori}
-                </span>
-                <span className="text-xs text-gray-500 font-medium">{activeBerita.tanggal}</span>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative bg-white rounded-2xl overflow-hidden max-w-xl w-full my-auto shadow-2xl animate-modal-in"
+            >
+              <div className="relative bg-gray-100">
+                <img
+                  src={activeBerita.gambar}
+                  alt={activeBerita.judul}
+                  className="w-full max-h-[50vh] object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => setActiveBerita(null)}
+                  aria-label="Tutup"
+                  className="absolute top-3 right-3 bg-black/65 hover:bg-black text-white w-9 h-9 rounded-full flex items-center justify-center font-bold transition cursor-pointer"
+                >
+                  ✕
+                </button>
               </div>
-              <h3 className="text-xl font-bold text-[#21416e]">{activeBerita.judul}</h3>
-              <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
-                {activeBerita.ringkasan}
-              </p>
+              <div className="p-6 space-y-2.5 max-h-[40vh] overflow-y-auto">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="bg-[#21416e] text-[#F1C40F] text-xs font-bold px-3 py-1 rounded-full">
+                    {activeBerita.kategori}
+                  </span>
+                  <span className="text-xs text-gray-500 font-medium">
+                    {activeBerita.tanggal}
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-[#21416e]">
+                  {activeBerita.judul}
+                </h3>
+                <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
+                  {activeBerita.ringkasan}
+                </p>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </main>
   );
 }

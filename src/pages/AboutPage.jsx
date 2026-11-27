@@ -13,7 +13,7 @@ export default function AboutPage({ setActivePage }) {
           </Reveal>
           <Reveal delay={150}>
             <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight">
-              Tentang Kami (About Us)
+              Tentang Kami
             </h1>
           </Reveal>
           <Reveal delay={250}>
