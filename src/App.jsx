@@ -40,15 +40,25 @@ const isAdminRoute = () => {
   );
 };
 
+const clearAdminBrowserStorage = () => {
+  try {
+    localStorage.removeItem('hmif_admin_user');
+    sessionStorage.removeItem('hmif_admin_user');
+  } catch {
+    // Abaikan jika akses storage dibatasi browser
+  }
+};
+
 export default function App() {
+  // Sesi admin tidak disimpan di penyimpanan browser (hanya aktif di memori saat sesi berjalan)
   const [adminUser, setAdminUser] = useState(() => {
-    const savedUser = localStorage.getItem('hmif_admin_user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    clearAdminBrowserStorage();
+    return null;
   });
 
+  // Saat website pertama dibuka atau dibuka ulang, arahkan ke Landing Page (kecuali langsung akses #admin)
   const [activePage, setActivePage] = useState(() => {
-    const savedUser = localStorage.getItem('hmif_admin_user');
-    if (savedUser) return 'dashboard';
+    clearAdminBrowserStorage();
     if (isAdminRoute()) return 'login';
     return 'landing';
   });
@@ -87,11 +97,22 @@ export default function App() {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     const handleFocus = () => fetchAllData();
 
+    // Hapus sesi admin saat pengguna keluar/menutup tab atau browser
+    const handleExitWebsite = () => {
+      clearAdminBrowserStorage();
+      setAdminUser(null);
+    };
+
     window.addEventListener('scroll', handleScroll);
     window.addEventListener('focus', handleFocus);
+    window.addEventListener('pagehide', handleExitWebsite);
+    window.addEventListener('beforeunload', handleExitWebsite);
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('pagehide', handleExitWebsite);
+      window.removeEventListener('beforeunload', handleExitWebsite);
     };
   }, []);
 
@@ -125,14 +146,18 @@ export default function App() {
   };
 
   const handleLogin = (userObject) => {
+    clearAdminBrowserStorage();
     setAdminUser(userObject);
-    localStorage.setItem('hmif_admin_user', JSON.stringify(userObject));
+    // Hapus #admin dari URL agar jika browser ditutup dan dibuka ulang langsung masuk ke Landing Page
+    if (window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
     setActivePage('dashboard');
   };
 
   const handleLogout = () => {
+    clearAdminBrowserStorage();
     setAdminUser(null);
-    localStorage.removeItem('hmif_admin_user');
     handleNavigate('landing');
   };
 
@@ -281,9 +306,11 @@ export default function App() {
     link.click();
   };
 
+  const isDashboardActive = activePage === 'dashboard' && Boolean(adminUser);
+
   return (
     <div className="font-sans bg-gray-50 text-gray-800 min-h-screen flex flex-col justify-between">
-      {activePage !== 'dashboard' && (
+      {!isDashboardActive && (
         <Header
           isScrolled={isScrolled}
           activePage={activePage}
@@ -291,7 +318,8 @@ export default function App() {
         />
       )}
 
-      {activePage === 'landing' && (
+      {(activePage === 'landing' ||
+        (activePage === 'dashboard' && !adminUser)) && (
         <LandingPage
           setActivePage={handleNavigate}
           setSelectedDept={setSelectedDept}
@@ -325,7 +353,7 @@ export default function App() {
         />
       )}
 
-      {activePage === 'dashboard' && adminUser && Dashboard && (
+      {isDashboardActive && Dashboard && (
         <Dashboard
           adminUser={adminUser}
           handleLogout={handleLogout}
@@ -349,7 +377,7 @@ export default function App() {
         />
       )}
 
-      {activePage !== 'dashboard' && Footer && <Footer />}
+      {!isDashboardActive && Footer && <Footer />}
     </div>
   );
 }
